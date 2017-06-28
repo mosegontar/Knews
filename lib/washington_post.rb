@@ -10,13 +10,15 @@ class WashingtonPost
         @links = @feed.items.collect { |item| item.link}
     end
 
+    # Select a random link to a WashPo article
     def randomize
         @links.sample
     end
 
     def read_random
-        link = self.randomize
-        resp = open(link)
+        random_link = self.randomize
+        resp = open(random_link)
+
         text = self.parse_response(resp)
     end
 
