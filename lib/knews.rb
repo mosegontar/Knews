@@ -1,63 +1,48 @@
-require "rss"
-require "open-uri"
-require "nokogiri"
-
-class WashingtonPost
-
-    def initialize
-        @rss_url = "http://feeds.washingtonpost.com/rss/national"
-        @feed = RSS::Parser.parse(open(@rss_url))
-        @links = @feed.items.collect { |item| item.link}
-    end
-
-    def randomize
-        @links.sample
-    end
-
-    def read_random
-        link = self.randomize
-        resp = open(link)
-        text = self.parse_response(resp)
-    end
-
-    def parse_response(resp)
-        doc = Nokogiri::HTML(resp)
-        doc.css('article p').to_a.map {|i| i.text }
-    end
-
-end
+require "./washington_post"
 
 
 class Knews
     def initialize
         @article = WashingtonPost.new.read_random
         @censored = []
-        @score = Float(0)
     end
 
-    def play
+    def read
         @article.each do |line|
-            @censored << self.censor(line)
-        end
-        
-        @censored.each do |line|
-            puts line.join(' ')
-            puts
+            censored, uppercases = censor(line)
+            puts censored.join(' ')
+            uppercases.each_with_index do |word, i|
+                print (i+1).to_s + ": "
+                resp = gets.chomp
+                puts "You guessed #{resp}"
+                puts "Real answer: #{word}"
+                puts
+                if i == uppercases.length - 1
+                    puts line
+                end
+            end
         end
     end
+
+    private
 
     def censor(line)
+        p line.split
+        uppercases = []
         censored = line.split.collect do |word|
-            self.check_word(word)
-        end        
+            checked = check_word(word)
+            uppercases << word unless checked == word
+            checked
+        end
+        return censored, uppercases
     end
 
     def check_word(word)
 
         new_word = word.match(/^[^\w]?\w+/).to_s
 
-        if new_word == self.is_upper?(new_word)
-            return '_____' + word.scan(/[^\w+][\w+]?/)[0].to_s
+        if new_word == is_upper?(new_word)
+            return '_____' + word.scan(/[^\w+][\w+]*/)[0].to_s
         else
             return word
         end
@@ -68,8 +53,4 @@ class Knews
     end
 end
 
-
-
-Knews.new.play
-
-
+Knews.new.read
